@@ -13,22 +13,40 @@ int bluetoothRx = 2;
 
 int BUZZER_PIN = 10;
 
+int RIGHT = 13;
+int LEFT = 12;
+int LIGHT = 11;
+
+boolean enable_safety = true;
+boolean honk_check = false;
+boolean lights = false;
+boolean stanga = false;
+boolean dreapta = false;
+
 long duration;
 int distance;
 int max_distance = 20;
-boolean enable_safety = true;
-boolean honk_check = false;
 int honk_time = 15000;
 int honk_count = 0;
 int honk_freq = 1500;
+int stanga_count = 0;
+int dreapta_count = 0;
+int avarii_count = 0;
+int semnalizare_timp = 10000;
+int semnalizare_on = false;
+int avarii_timp = 10000;
+int avarii_on = false;
 
 SoftwareSerial bluetooth(bluetoothTx, bluetoothRx);
 
 void setup() {
+  pinMode(LIGHT, OUTPUT);
+  pinMode(LEFT, OUTPUT);
+  pinMode(RIGHT, OUTPUT);
   pinMode(BUZZER_PIN, OUTPUT);
   
-  pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
-  pinMode(echoPin, INPUT); // Sets the echoPin as an Input
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
 
   pinMode(MOTOR1_PIN1, OUTPUT);
   pinMode(MOTOR1_PIN2, OUTPUT);
@@ -46,6 +64,10 @@ void setup() {
 
 void loop() {
   claxon();
+  faruri();
+  semnalizare_stanga();
+  semnalizare_dreapta();
+  avarii();
   
   if (bluetooth.available()) {
     char cmd = (char)bluetooth.read();
@@ -87,13 +109,39 @@ void loop() {
     } else if (cmd == 'y') {
       honk_check = true;
       honk_count = 0;
+    } else if (cmd == 'b') {
+      if (stanga == true && dreapta == true) {
+        stanga = false;
+        dreapta = false;
+      } else {
+        stanga = true;
+        dreapta = true;
+      }
+    } else if (cmd == 'c') {
+      dreapta = false;
+      
+      if (stanga == true) {
+        stanga = false;
+      } else {
+        stanga = true;
+      }
+    } else if (cmd == 'z') {
+      stanga = false;
+      
+      if (dreapta == true) {
+        dreapta = false;
+      } else {
+        dreapta = true;
+      }
+    } else if (cmd == 'a') {
+      if (lights == true) {
+        lights = false;
+      } else {
+        lights = true;
+      }
     }
+    
   }
-
-  //if(Serial.available()) {
-  //  char toSend = (char)Serial.read();
-  //  bluetooth.print(toSend);
-  //}
 }
 
 void claxon() {
@@ -104,6 +152,89 @@ void claxon() {
     honk_check = false;
     honk_count = 0;
     noTone(BUZZER_PIN);
+  }
+}
+
+void faruri() {
+  if (lights == true) {
+    digitalWrite(LIGHT, HIGH);
+  } else {
+    digitalWrite(LIGHT, LOW);
+  }
+}
+
+void semnalizare_stanga() {
+  if (stanga == true && dreapta == false) {
+    stanga_count++;
+    
+    if (stanga_count > semnalizare_timp) {
+      stanga_count = 0;
+
+      if (semnalizare_on == true) {
+        semnalizare_on = false;
+      } else {
+        semnalizare_on = true;
+      }
+    }
+
+    if (semnalizare_on == true) {
+      digitalWrite(LEFT, HIGH);
+    } else {
+      digitalWrite(LEFT, LOW);
+    }
+  } else {
+    digitalWrite(LEFT, LOW);
+  }
+}
+
+void semnalizare_dreapta() {
+  if (dreapta == true && stanga == false) {
+    dreapta_count++;
+    
+    if (dreapta_count > semnalizare_timp) {
+      dreapta_count = 0;
+
+      if (semnalizare_on == true) {
+        semnalizare_on = false;
+      } else {
+        semnalizare_on = true;
+      }
+    }
+
+    if (semnalizare_on == true) {
+      digitalWrite(RIGHT, HIGH);
+    } else {
+      digitalWrite(RIGHT, LOW);
+    }
+  } else {
+    digitalWrite(RIGHT, LOW);
+  }
+}
+
+void avarii() {
+  if (stanga == true && dreapta == true) {
+    avarii_count++;
+    
+    if (avarii_count > semnalizare_timp) {
+      avarii_count = 0;
+
+      if (avarii_on == true) {
+        avarii_on = false;
+      } else {
+        avarii_on = true;
+      }
+    }
+
+    if (avarii_on == true) {
+      digitalWrite(LEFT, HIGH);
+      digitalWrite(RIGHT, HIGH);
+    } else {
+      digitalWrite(LEFT, LOW);
+      digitalWrite(RIGHT, LOW);
+    }
+  } else {
+    digitalWrite(LEFT, LOW);
+    digitalWrite(RIGHT, LOW);
   }
 }
 
